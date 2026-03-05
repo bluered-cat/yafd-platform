@@ -1,0 +1,25 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/yafd_orders
+    username: yafd
+    password: yafd_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+# Service URLs for inter-service communication
+services:
+  account-url: http://localhost:8081
+  menu-url: http://localhost:8082
+  voucher-url: http://localhost:8084
+  payment-url: http://localhost:8085

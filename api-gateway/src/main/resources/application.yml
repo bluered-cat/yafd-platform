@@ -1,0 +1,75 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        # Account Service
+        - id: account-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/accounts/**
+        # Rider endpoints (Account Service)
+        - id: rider-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/riders/**
+        # Menu Service — Restaurants (public)
+        - id: restaurant-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/restaurants/**
+        # Menu Service — Batch endpoint (internal)
+        - id: menu-items-batch
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/menu-items/**
+        # Order Service
+        - id: order-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/orders/**
+        # Voucher Service
+        - id: voucher-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/vouchers/**
+        # Payment Service — Payment Methods
+        - id: payment-method-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/payment-methods/**
+        # Payment Service — Payments
+        - id: payment-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/payments/**
+
+firebase:
+  project-id: ${FIREBASE_PROJECT_ID:yafd-platform}
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:src/main/resources/firebase-service-account.json}
+
+gateway:
+  auth:
+    public-paths:
+      - /api/restaurants/**
+      - /api/restaurants/search
+      - /api/menu-items/**
+  rate-limit:
+    browsing-rate: 50
+    order-rate: 20
