@@ -1,40 +1,40 @@
 package com.yafd.accountservice.entity;
 
-import com.yafd.accountservice.enums.AccountRole;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "accounts")
+@Table(name = "addresses")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Account {
+public class Address {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "firebase_uid", unique = true, nullable = false, length = 128)
-    private String firebaseUid;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
+
+    @Column(nullable = false, length = 50)
+    private String label;
 
     @Column(nullable = false)
-    private String email;
+    private String street;
 
-    @Column(nullable = false)
-    private String name;
+    @Column(name = "unit_number", length = 50)
+    private String unitNumber;
 
-    @Column(length = 20)
-    private String phone;
+    @Column(nullable = false, length = 100)
+    private String city;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private AccountRole role;
+    @Column(name = "postal_code", nullable = false, length = 20)
+    private String postalCode;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(name = "is_default")
     @Builder.Default
-    private List<Address> addresses = new ArrayList<>();
+    private Boolean isDefault = false;
 
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
@@ -53,4 +53,3 @@ public class Account {
         updatedAt = OffsetDateTime.now();
     }
 }
-
