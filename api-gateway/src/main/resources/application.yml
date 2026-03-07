@@ -6,6 +6,11 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      grpc:
+        enabled: false
+      filter:
+        json-to-grpc:
+          enabled: false
       globalcors:
         corsConfigurations:
           '[/**]':
@@ -61,15 +66,12 @@ spring:
             - Path=/api/payments/**
 
 firebase:
-  project-id: ${FIREBASE_PROJECT_ID:yafd-platform}
+  project-id: ${FIREBASE_PROJECT_ID:yafd-c0f20}
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:src/main/resources/firebase-service-account.json}
 
 gateway:
   auth:
-    public-paths:
-      - /api/restaurants/**
-      - /api/restaurants/search
-      - /api/menu-items/**
+    public-paths: /api/restaurants/**,/api/restaurants/search,/api/menu-items/**
   rate-limit:
     browsing-rate: 50
     order-rate: 20

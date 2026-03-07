@@ -21,7 +21,7 @@ import java.util.List;
 @Component
 public class FirebaseAuthFilter implements GlobalFilter, Ordered {
 
-    @Value("${gateway.auth.public-paths}")
+    @Value("#{'${gateway.auth.public-paths}'.split(',')}")
     private List<String> publicPaths;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
