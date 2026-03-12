@@ -32,3 +32,18 @@ To run the platform:
 4. Start each Spring Boot service (e.g. cd account-service && mvn spring-boot:run)
 5. cd frontend && npm install && npm start
 6. Set Firebase config env vars in frontend/.env
+
+
+## Database Setup
+
+To restore the YAFD PostgreSQL database:
+
+1. Make sure Docker is running.
+2. Run the following from the project root:
+
+   docker exec -i yafd-postgres psql -U yafd -d yafd_accounts < yafd_accounts_full_dump.sql
+   
+## Verify tables:
+
+docker exec -it yafd-postgres psql -U yafd -d yafd_accounts
+\dt  
