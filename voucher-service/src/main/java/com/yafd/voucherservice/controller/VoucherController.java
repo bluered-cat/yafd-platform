@@ -42,4 +42,14 @@ public class VoucherController {
         voucherService.delete(voucherId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/validate")
+    public ResponseEntity<ValidateVoucherResponse> validate(@RequestBody ValidateVoucherRequest request) {
+        return ResponseEntity.ok(voucherService.validate(request));
+    }
+
+    @PostMapping("/redeem")
+    public ResponseEntity<RedeemVoucherResponse> redeem(@RequestBody RedeemVoucherRequest request) {
+        return ResponseEntity.ok(voucherService.redeem(request));
+    }
 }
