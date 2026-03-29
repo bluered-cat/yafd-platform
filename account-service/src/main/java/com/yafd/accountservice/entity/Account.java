@@ -1,9 +1,11 @@
 package com.yafd.accountservice.entity;
 
 import com.yafd.accountservice.enums.AccountRole;
+import com.yafd.accountservice.enums.VehicleType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,13 @@ public class Account {
     @Column(nullable = false, length = 20)
     private AccountRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vehicle_type", length = 30)
+    private VehicleType vehicleType;
+
+    @Column(name = "is_available")
+    private Boolean isAvailable;
+
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Address> addresses = new ArrayList<>();
@@ -53,4 +62,3 @@ public class Account {
         updatedAt = OffsetDateTime.now();
     }
 }
-

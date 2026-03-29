@@ -23,4 +23,11 @@ public class AccountController {
     public ResponseEntity<AccountResponse> getAccount(@PathVariable String userId) {
         return ResponseEntity.ok(accountService.getByFirebaseUid(userId));
     }
+
+    @PutMapping("/{userId}")
+    public ResponseEntity<AccountResponse> updateAccount(
+            @PathVariable String userId,
+            @RequestBody UpdateAccountRequest request) {
+        return ResponseEntity.ok(accountService.update(userId, request));
+    }
 }
