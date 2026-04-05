@@ -7,23 +7,31 @@ export default function OrderHistoryPage() {
   const { currentUser } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.get(`/api/orders/user/${currentUser.uid}`);
-        setOrders(res.data);
-      } catch { /* ignore */ }
-      setLoading(false);
-    };
-    load();
-  }, [currentUser]);
+  const fetchOrders = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const res = await api.get(`/api/orders/user/${currentUser.uid}`);
+      setOrders(res.data);
+    } catch { /* ignore */ }
+    setLoading(false);
+    setRefreshing(false);
+  };
+
+  useEffect(() => { fetchOrders(); }, [currentUser]);
 
   if (loading) return <div className="loading">Loading orders...</div>;
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <h2 style={{ marginBottom: 20 }}>Order History</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2>Order History</h2>
+        <button className="btn btn-secondary" onClick={() => fetchOrders({ silent: true })} disabled={refreshing}>
+          {refreshing ? 'Refreshing...' : '↻ Refresh'}
+        </button>
+      </div>
       {orders.length === 0 ? (
         <div className="empty-state">
           <p>No orders yet.</p>
