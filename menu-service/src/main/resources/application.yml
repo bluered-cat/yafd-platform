@@ -6,5 +6,5 @@ spring:
     name: menu-service
 
 firebase:
-  project-id: ${FIREBASE_PROJECT_ID:yafd-platform}
+  project-id: ${FIREBASE_PROJECT_ID:yafd-c0f20}
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:src/main/resources/firebase-service-account.json}
