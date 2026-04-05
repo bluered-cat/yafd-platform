@@ -290,6 +290,12 @@ body {
 }
 .modal-close:hover { color: #333; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.modal-wide { max-width: 640px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.voucher-code-badge {
+  font-family: monospace; font-size: 0.9rem; font-weight: 700;
+  background: #f0f0f0; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.05em;
+}
 .btn-back {
   background: none; border: none; cursor: pointer;
   color: #e74c3c; font-size: 0.9rem; padding: 0; font-weight: 600;

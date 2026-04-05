@@ -558,18 +558,261 @@ function MenusPanel() {
   );
 }
 
-// ─── Placeholder Panel ───────────────────────────────────────────────────────
+// ─── Voucher Form Modal ───────────────────────────────────────────────────────
 
-function ComingSoonPanel({ title }) {
+const EMPTY_VOUCHER_FORM = {
+  code: '',
+  description: '',
+  discountType: 'PERCENTAGE',
+  discountValue: '',
+  maxUsage: '',
+  minOrderAmount: '',
+  validFrom: '',
+  validUntil: '',
+  active: true,
+};
+
+function toLocalDateTimeInput(isoString) {
+  if (!isoString) return '';
+  return isoString.slice(0, 16); // "YYYY-MM-DDTHH:MM"
+}
+
+function toOffsetDateTime(localString) {
+  if (!localString) return null;
+  return new Date(localString).toISOString();
+}
+
+function VoucherModal({ voucher, onClose, onSaved }) {
+  const editing = !!voucher;
+  const [form, setForm] = useState(
+    editing
+      ? {
+          code: voucher.code,
+          description: voucher.description || '',
+          discountType: voucher.discountType,
+          discountValue: voucher.discountValue,
+          maxUsage: voucher.maxUsage ?? '',
+          minOrderAmount: voucher.minOrderAmount ?? '',
+          validFrom: toLocalDateTimeInput(voucher.validFrom),
+          validUntil: toLocalDateTimeInput(voucher.validUntil),
+          active: voucher.active,
+        }
+      : { ...EMPTY_VOUCHER_FORM }
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      const payload = {
+        description: form.description || null,
+        discountType: form.discountType,
+        discountValue: form.discountValue !== '' ? parseFloat(form.discountValue) : null,
+        maxUsage: form.maxUsage !== '' ? parseInt(form.maxUsage) : null,
+        minOrderAmount: form.minOrderAmount !== '' ? parseFloat(form.minOrderAmount) : null,
+        validFrom: toOffsetDateTime(form.validFrom),
+        validUntil: toOffsetDateTime(form.validUntil),
+      };
+      if (editing) {
+        await api.put(`/api/vouchers/${voucher.id}`, { ...payload, active: form.active });
+      } else {
+        await api.post('/api/vouchers', { ...payload, code: form.code });
+      }
+      onSaved();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to save voucher. Please try again.');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{editing ? 'Edit Voucher' : 'Create Voucher'}</h3>
+          <button className="modal-close" onClick={onClose}>&times;</button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          {error && <div className="staff-error">{error}</div>}
+
+          <div className="form-row-2">
+            <div className="form-group">
+              <label>Code *</label>
+              <input
+                name="code" value={form.code} onChange={handleChange}
+                required disabled={editing}
+                style={editing ? { background: '#f5f5f5', color: '#aaa' } : {}}
+              />
+            </div>
+            <div className="form-group">
+              <label>Discount Type *</label>
+              <select name="discountType" value={form.discountType} onChange={handleChange}>
+                <option value="PERCENTAGE">Percentage (%)</option>
+                <option value="FIXED_AMOUNT">Fixed Amount ($)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row-2">
+            <div className="form-group">
+              <label>Discount Value *</label>
+              <input name="discountValue" type="number" min="0" step="0.01" value={form.discountValue} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Min Order Amount</label>
+              <input name="minOrderAmount" type="number" min="0" step="0.01" value={form.minOrderAmount} onChange={handleChange} placeholder="No minimum" />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Description</label>
+            <input name="description" value={form.description} onChange={handleChange} placeholder="Optional description" />
+          </div>
+
+          <div className="form-group">
+            <label>Max Usage <span style={{ fontWeight: 400, color: '#aaa' }}>(leave blank for unlimited)</span></label>
+            <input name="maxUsage" type="number" min="1" step="1" value={form.maxUsage} onChange={handleChange} placeholder="Unlimited" />
+          </div>
+
+          <div className="form-row-2">
+            <div className="form-group">
+              <label>Valid From</label>
+              <input name="validFrom" type="datetime-local" value={form.validFrom} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>Valid Until</label>
+              <input name="validUntil" type="datetime-local" value={form.validUntil} onChange={handleChange} />
+            </div>
+          </div>
+
+          {editing && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <input type="checkbox" name="active" checked={form.active} onChange={handleChange} />
+              Active
+            </label>
+          )}
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Vouchers Panel ───────────────────────────────────────────────────────────
+
+function VouchersPanel() {
+  const [vouchers, setVouchers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalTarget, setModalTarget] = useState(undefined);
+  const [deleteId, setDeleteId] = useState(null);
+
+  useEffect(() => { fetchVouchers(); }, []);
+
+  const fetchVouchers = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/api/vouchers');
+      setVouchers(res.data);
+    } catch { /* ignore */ }
+    setLoading(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this voucher? This cannot be undone.')) return;
+    setDeleteId(id);
+    try {
+      await api.delete(`/api/vouchers/${id}`);
+      setVouchers((prev) => prev.filter((v) => v.id !== id));
+    } catch {
+      alert('Failed to delete voucher.');
+    }
+    setDeleteId(null);
+  };
+
+  const formatValidity = (from, until) => {
+    const fmt = (dt) => dt ? new Date(dt).toLocaleDateString() : '—';
+    return `${fmt(from)} → ${fmt(until)}`;
+  };
+
+  const formatDiscount = (v) =>
+    v.discountType === 'PERCENTAGE' ? `${v.discountValue}%` : `$${parseFloat(v.discountValue).toFixed(2)}`;
+
   return (
     <div className="staff-panel">
       <div className="staff-panel-header">
-        <h2>{title}</h2>
+        <h2>Vouchers</h2>
+        <button className="btn btn-primary" onClick={() => setModalTarget(null)}>+ Create Voucher</button>
       </div>
-      <div className="empty-state" style={{ padding: '80px 0' }}>
-        <div style={{ fontSize: '2rem', marginBottom: 12 }}>🚧</div>
-        <div>This section is coming soon.</div>
-      </div>
+
+      {loading ? (
+        <div className="loading">Loading...</div>
+      ) : vouchers.length === 0 ? (
+        <div className="empty-state">No vouchers yet. Create one to get started.</div>
+      ) : (
+        <div className="staff-table-wrapper">
+          <table className="staff-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Discount</th>
+                <th>Min Order</th>
+                <th>Usage</th>
+                <th>Validity</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vouchers.map((v) => (
+                <tr key={v.id}>
+                  <td><span className="voucher-code-badge">{v.code}</span></td>
+                  <td>{formatDiscount(v)}</td>
+                  <td>{v.minOrderAmount ? `$${parseFloat(v.minOrderAmount).toFixed(2)}` : '—'}</td>
+                  <td>{v.currentUsage ?? 0} / {v.maxUsage ?? '∞'}</td>
+                  <td style={{ fontSize: '0.85rem', color: '#888' }}>{formatValidity(v.validFrom, v.validUntil)}</td>
+                  <td>
+                    <span className={`status-badge ${v.active ? 'active' : 'inactive'}`}>
+                      {v.active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="table-actions">
+                    <button className="btn btn-secondary btn-small" onClick={() => setModalTarget(v)}>Edit</button>
+                    <button
+                      className="btn btn-danger btn-small"
+                      onClick={() => handleDelete(v.id)}
+                      disabled={deleteId === v.id}
+                    >
+                      {deleteId === v.id ? '...' : 'Delete'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {modalTarget !== undefined && (
+        <VoucherModal
+          voucher={modalTarget}
+          onClose={() => setModalTarget(undefined)}
+          onSaved={() => { setModalTarget(undefined); fetchVouchers(); }}
+        />
+      )}
     </div>
   );
 }
@@ -597,7 +840,7 @@ export default function StaffDashboardPage() {
     switch (activeSection) {
       case 'restaurants': return <RestaurantsPanel />;
       case 'menus': return <MenusPanel />;
-      case 'vouchers': return <ComingSoonPanel title="Vouchers" />;
+      case 'vouchers': return <VouchersPanel />;
       default: return null;
     }
   };
