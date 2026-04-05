@@ -111,7 +111,7 @@ export default function RiderDashboardPage() {
                   </button>
                 )}
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-outline"
                   disabled={updating === order.id}
                   onClick={() => updateStatus(order.id, 'DELIVERED')}
                 >

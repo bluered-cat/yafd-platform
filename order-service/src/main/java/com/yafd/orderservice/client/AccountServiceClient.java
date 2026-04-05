@@ -29,7 +29,7 @@ public class AccountServiceClient {
     }
 
     public void updateRiderAvailability(Long riderId, boolean available) {
-        String url = accountServiceUrl + "/api/riders/" + riderId + "/availability?available=" + available;
-        restTemplate.put(url, null);
+        String url = accountServiceUrl + "/api/riders/" + riderId + "/availability";
+        restTemplate.put(url, Map.of("available", available));
     }
 }
