@@ -172,6 +172,12 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    public List<OrderResponse> getByRiderId(Long riderId) {
+        return orderRepository.findByRiderIdOrderByCreatedAtDesc(riderId).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public OrderResponse updateStatus(Long orderId, String newStatus) {
         Order order = orderRepository.findById(orderId)

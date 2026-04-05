@@ -22,9 +22,13 @@ export default function Navbar() {
         
         {currentUser ? (
           <>
-            {userProfile?.role === 'STAFF' ? (
+            {userProfile?.role === 'STAFF' && (
               <Link to="/staff/dashboard">Dashboard</Link>
-            ) : (
+            )}
+            {userProfile?.role === 'RIDER' && (
+              <Link to="/rider/orders">My Orders</Link>
+            )}
+            {(!userProfile?.role || userProfile?.role === 'CUSTOMER') && (
               <>
                 <Link to="/">Restaurants</Link>
                 <Link to="/checkout">

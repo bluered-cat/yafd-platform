@@ -12,6 +12,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import StaffDashboardPage from './pages/StaffDashboardPage';
+import RiderDashboardPage from './pages/RiderDashboardPage';
 import './App.css';
 
 function ProtectedRoute({ children }) {
@@ -23,6 +24,13 @@ function StaffRoute({ children }) {
   const { currentUser, userProfile } = useAuth();
   if (!currentUser) return <Navigate to="/login" />;
   if (userProfile && userProfile.role !== 'STAFF') return <Navigate to="/" />;
+  return children;
+}
+
+function RiderRoute({ children }) {
+  const { currentUser, userProfile } = useAuth();
+  if (!currentUser) return <Navigate to="/login" />;
+  if (userProfile && userProfile.role !== 'RIDER') return <Navigate to="/" />;
   return children;
 }
 
@@ -44,6 +52,7 @@ function App() {
                 <Route path="/orders/:orderId/confirmation" element={<ProtectedRoute><OrderConfirmationPage /></ProtectedRoute>} />
                 <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
                 <Route path="/staff/dashboard" element={<StaffRoute><StaffDashboardPage /></StaffRoute>} />
+                <Route path="/rider/orders" element={<RiderRoute><RiderDashboardPage /></RiderRoute>} />
               </Routes>
             </main>
           </div>
