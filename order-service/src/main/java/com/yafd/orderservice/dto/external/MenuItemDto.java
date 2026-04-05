@@ -13,6 +13,6 @@ public class MenuItemDto {
     private BigDecimal price;
     private String category;
     private String imageUrl;
-    private boolean isAvailable;
+    private Boolean isAvailable;
     private String restaurantName;
 }

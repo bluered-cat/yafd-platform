@@ -46,7 +46,7 @@ public class OrderService {
             if (menuItem == null) {
                 throw new RuntimeException("Menu item not found: " + item.getMenuItemId());
             }
-            if (!menuItem.isAvailable()) {
+            if (!Boolean.TRUE.equals(menuItem.getIsAvailable())) {
                 throw new RuntimeException("Menu item not available: " + menuItem.getName());
             }
         }
