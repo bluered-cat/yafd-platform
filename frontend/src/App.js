@@ -11,11 +11,19 @@ import RestaurantDetailPage from './pages/RestaurantDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
+import StaffDashboardPage from './pages/StaffDashboardPage';
 import './App.css';
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
   return currentUser ? children : <Navigate to="/login" />;
+}
+
+function StaffRoute({ children }) {
+  const { currentUser, userProfile } = useAuth();
+  if (!currentUser) return <Navigate to="/login" />;
+  if (userProfile && userProfile.role !== 'STAFF') return <Navigate to="/" />;
+  return children;
 }
 
 function App() {
@@ -35,6 +43,7 @@ function App() {
                 <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
                 <Route path="/orders/:orderId/confirmation" element={<ProtectedRoute><OrderConfirmationPage /></ProtectedRoute>} />
                 <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+                <Route path="/staff/dashboard" element={<StaffRoute><StaffDashboardPage /></StaffRoute>} />
               </Routes>
             </main>
           </div>

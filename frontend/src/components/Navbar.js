@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
 
@@ -19,13 +19,20 @@ export default function Navbar() {
     <nav className="navbar">
       <Link to="/" className="navbar-brand">YAFD</Link>
       <div className="navbar-links">
-        <Link to="/">Restaurants</Link>
+        
         {currentUser ? (
           <>
-            <Link to="/checkout">
-              Cart {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-            </Link>
-            <Link to="/orders">Orders</Link>
+            {userProfile?.role === 'STAFF' ? (
+              <Link to="/staff/dashboard">Dashboard</Link>
+            ) : (
+              <>
+                <Link to="/">Restaurants</Link>
+                <Link to="/checkout">
+                  Cart {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                </Link>
+                <Link to="/orders">Orders</Link>
+              </>
+            )}
             <Link to="/profile">Profile</Link>
             <button className="btn btn-secondary btn-small" onClick={handleLogout}>Logout</button>
           </>
