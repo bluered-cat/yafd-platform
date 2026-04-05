@@ -9,7 +9,7 @@ export default function RestaurantDetailPage() {
   const [menus, setMenus] = useState([]);
   const [menuItems, setMenuItems] = useState({}); // menuId -> items[]
   const [loading, setLoading] = useState(true);
-  const { addToCart, cartItems } = useCart();
+  const { addToCart, removeFromCart, cartItems } = useCart();
 
   useEffect(() => {
     const load = async () => {
@@ -66,6 +66,9 @@ export default function RestaurantDetailPage() {
           <div className="menu-items-grid">
             {(menuItems[menu.id] || []).map((item) => (
               <div key={item.id} className="card menu-item-card">
+                {item.imageUrl && (
+                  <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: 140, objectFit: 'cover' }} />
+                )}
                 <div className="card-body">
                   <div className="item-info">
                     <div className="item-name">{item.name}</div>
@@ -73,19 +76,19 @@ export default function RestaurantDetailPage() {
                     <div className="item-price">${item.price?.toFixed(2)}</div>
                   </div>
                   <div className="item-actions">
-                    {getCartQty(item.id) > 0 ? (
-                      <span style={{ fontWeight: 600, color: '#27ae60' }}>
-                        In cart: {getCartQty(item.id)}
-                      </span>
-                    ) : null}
-                    <button
-                      className="btn btn-primary btn-small"
-                      style={{ marginLeft: 8 }}
-                      onClick={() => addToCart(item, restaurant)}
-                      disabled={!item.isAvailable}
-                    >
-                      {item.isAvailable ? '+ Add' : 'Unavailable'}
-                    </button>
+                    {!item.isAvailable ? (
+                      <span style={{ fontSize: '0.85rem', color: '#aaa' }}>Unavailable</span>
+                    ) : getCartQty(item.id) > 0 ? (
+                      <div className="qty-control">
+                        <button className="qty-btn" onClick={() => removeFromCart(item.id)}>−</button>
+                        <span className="qty-value">{getCartQty(item.id)}</span>
+                        <button className="qty-btn" onClick={() => addToCart(item, restaurant)}>+</button>
+                      </div>
+                    ) : (
+                      <button className="btn btn-primary btn-small" onClick={() => addToCart(item, restaurant)}>
+                        + Add
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
