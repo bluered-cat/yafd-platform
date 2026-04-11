@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity

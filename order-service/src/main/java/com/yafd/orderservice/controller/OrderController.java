@@ -2,6 +2,7 @@ package com.yafd.orderservice.controller;
 
 import com.yafd.orderservice.dto.OrderResponse;
 import com.yafd.orderservice.dto.SubmitOrderRequest;
+import com.yafd.orderservice.dto.UpdateStatusRequest;
 import com.yafd.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,3 +32,22 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getByUserId(userId));
     }
 
+    @GetMapping("/rider/{riderId}")
+    public ResponseEntity<List<OrderResponse>> getByRiderId(@PathVariable Long riderId) {
+        return ResponseEntity.ok(orderService.getByRiderId(riderId));
+    }
+
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<OrderResponse> updateStatus(
+            @PathVariable Long orderId,
+            @RequestBody UpdateStatusRequest request) {
+        return ResponseEntity.ok(orderService.updateStatus(orderId, request.getStatus()));
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderResponse> cancel(
+            @PathVariable Long orderId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(orderService.cancelOrder(orderId, userId));
+    }
+}

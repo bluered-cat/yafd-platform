@@ -36,29 +36,29 @@ function RiderRoute({ children }) {
 
 function App() {
   return (
-      <Router>
-        <AuthProvider>
-          <CartProvider>
-            <div className="app">
-              <Navbar />
-              <main className="main-content">
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/" element={<RestaurantListPage />} />
-                  <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
-                  <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-                  <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-                  <Route path="/orders/:orderId/confirmation" element={<ProtectedRoute><OrderConfirmationPage /></ProtectedRoute>} />
-                  <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
-                  <Route path="/staff/dashboard" element={<StaffRoute><StaffDashboardPage /></StaffRoute>} />
-                  <Route path="/rider/orders" element={<RiderRoute><RiderDashboardPage /></RiderRoute>} />
-                </Routes>
-              </main>
-            </div>
-          </CartProvider>
-        </AuthProvider>
-      </Router>
+    <Router>
+      <AuthProvider>
+        <CartProvider>
+          <div className="app">
+            <Navbar />
+            <main className="main-content">
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/" element={<RestaurantListPage />} />
+                <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+                <Route path="/orders/:orderId/confirmation" element={<ProtectedRoute><OrderConfirmationPage /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><OrderHistoryPage /></ProtectedRoute>} />
+                <Route path="/staff/dashboard" element={<StaffRoute><StaffDashboardPage /></StaffRoute>} />
+                <Route path="/rider/orders" element={<RiderRoute><RiderDashboardPage /></RiderRoute>} />
+              </Routes>
+            </main>
+          </div>
+        </CartProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
