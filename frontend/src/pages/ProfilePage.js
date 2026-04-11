@@ -4,6 +4,7 @@ import api from '../api';
 
 export default function ProfilePage() {
   const { currentUser, userProfile, setUserProfile } = useAuth();
+  const isCustomer = userProfile?.role === 'CUSTOMER';
   const [form, setForm] = useState({ name: '', phone: '', email: '' });
   const [addresses, setAddresses] = useState([]);
   const [addrForm, setAddrForm] = useState({ label: '', street: '', unitNumber: '', city: '', postalCode: '', isDefault: false });
@@ -18,8 +19,10 @@ export default function ProfilePage() {
     if (userProfile) {
       setForm({ name: userProfile.name, phone: userProfile.phone || '', email: userProfile.email });
     }
-    loadAddresses();
-    loadPaymentMethods();
+    if (isCustomer) {
+      loadAddresses();
+      loadPaymentMethods();
+    }
   }, [userProfile]);
 
   const loadAddresses = async () => {
@@ -124,118 +127,123 @@ export default function ProfilePage() {
         </form>
       </div>
 
-      <div className="checkout-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Delivery Addresses</h3>
-          <button className="btn btn-outline btn-small" onClick={() => { setShowAddrForm(!showAddrForm); setEditingAddr(null); setAddrForm({ label: '', street: '', unitNumber: '', city: '', postalCode: '', isDefault: false }); }}>
-            {showAddrForm ? 'Cancel' : '+ Add'}
-          </button>
-        </div>
+      {isCustomer && (
+        <div className="checkout-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ margin: 0 }}>Delivery Addresses</h3>
+            <button className="btn btn-outline btn-small" onClick={() => { setShowAddrForm(!showAddrForm); setEditingAddr(null); setAddrForm({ label: '', street: '', unitNumber: '', city: '', postalCode: '', isDefault: false }); }}>
+              {showAddrForm ? 'Cancel' : '+ Add'}
+            </button>
+          </div>
 
-        {showAddrForm && (
-          <form onSubmit={handleAddrSubmit} style={{ marginBottom: 20, padding: 16, background: '#fafafa', borderRadius: 8 }}>
-            <div className="form-group">
-              <label>Label</label>
-              <input placeholder="e.g. Home, Work" value={addrForm.label} onChange={(e) => setAddrForm({...addrForm, label: e.target.value})} required />
-            </div>
-            <div className="form-group">
-              <label>Street</label>
-              <input value={addrForm.street} onChange={(e) => setAddrForm({...addrForm, street: e.target.value})} required />
-            </div>
-            <div className="form-group">
-              <label>Unit Number</label>
-              <input value={addrForm.unitNumber} onChange={(e) => setAddrForm({...addrForm, unitNumber: e.target.value})} />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {showAddrForm && (
+            <form onSubmit={handleAddrSubmit} style={{ marginBottom: 20, padding: 16, background: '#fafafa', borderRadius: 8 }}>
               <div className="form-group">
-                <label>City</label>
-                <input value={addrForm.city} onChange={(e) => setAddrForm({...addrForm, city: e.target.value})} required />
+                <label>Label</label>
+                <input placeholder="e.g. Home, Work" value={addrForm.label} onChange={(e) => setAddrForm({...addrForm, label: e.target.value})} required />
               </div>
               <div className="form-group">
-                <label>Postal Code</label>
-                <input value={addrForm.postalCode} onChange={(e) => setAddrForm({...addrForm, postalCode: e.target.value})} required />
+                <label>Street</label>
+                <input value={addrForm.street} onChange={(e) => setAddrForm({...addrForm, street: e.target.value})} required />
               </div>
-            </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <input type="checkbox" checked={addrForm.isDefault} onChange={(e) => setAddrForm({...addrForm, isDefault: e.target.checked})} />
-              Set as default
-            </label>
-            <button className="btn btn-primary">{editingAddr ? 'Update' : 'Add'} Address</button>
-          </form>
-        )}
-
-        <div className="address-list">
-          {addresses.map((addr) => (
-            <div key={addr.id} className="address-card">
-              <div>
-                <strong>{addr.label}</strong> {addr.isDefault && <span className="default-badge">Default</span>}
-                <div style={{ fontSize: '0.9rem', color: '#666', marginTop: 4 }}>
-                  {addr.street}{addr.unitNumber ? `, ${addr.unitNumber}` : ''}, {addr.city} {addr.postalCode}
+              <div className="form-group">
+                <label>Unit Number</label>
+                <input value={addrForm.unitNumber} onChange={(e) => setAddrForm({...addrForm, unitNumber: e.target.value})} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-group">
+                  <label>City</label>
+                  <input value={addrForm.city} onChange={(e) => setAddrForm({...addrForm, city: e.target.value})} required />
+                </div>
+                <div className="form-group">
+                  <label>Postal Code</label>
+                  <input value={addrForm.postalCode} onChange={(e) => setAddrForm({...addrForm, postalCode: e.target.value})} required />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-secondary btn-small" onClick={() => startEdit(addr)}>Edit</button>
-                <button className="btn btn-secondary btn-small" onClick={() => deleteAddress(addr.id)}>Delete</button>
-              </div>
-            </div>
-          ))}
-          {addresses.length === 0 && <div className="empty-state">No addresses yet.</div>}
-        </div>
-      </div>
-      <div className="checkout-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Payment Methods</h3>
-          <button className="btn btn-outline btn-small" onClick={() => setShowPmForm(!showPmForm)}>
-            {showPmForm ? 'Cancel' : '+ Add'}
-          </button>
-        </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <input type="checkbox" checked={addrForm.isDefault} onChange={(e) => setAddrForm({...addrForm, isDefault: e.target.checked})} />
+                Set as default
+              </label>
+              <button className="btn btn-primary">{editingAddr ? 'Update' : 'Add'} Address</button>
+            </form>
+          )}
 
-        {showPmForm && (
-          <form onSubmit={handlePmSubmit} style={{ marginBottom: 20, padding: 16, background: '#fafafa', borderRadius: 8 }}>
-            <div className="form-group">
-              <label>Label</label>
-              <input placeholder="e.g. Personal Card" value={pmForm.label} onChange={(e) => setPmForm({ ...pmForm, label: e.target.value })} required />
-            </div>
-            <div className="form-group">
-              <label>Type</label>
-              <select value={pmForm.type} onChange={(e) => setPmForm({ ...pmForm, type: e.target.value })}>
-                <option value="CREDIT_CARD">Credit Card</option>
-                <option value="DEBIT_CARD">Debit Card</option>
-                <option value="E_WALLET">E-Wallet</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Last 4 digits <span style={{ fontWeight: 400, color: '#aaa' }}>(optional)</span></label>
-              <input
-                placeholder="e.g. 4242" maxLength={4} value={pmForm.lastFour}
-                onChange={(e) => setPmForm({ ...pmForm, lastFour: e.target.value })}
-              />
-            </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <input type="checkbox" checked={pmForm.isDefault} onChange={(e) => setPmForm({ ...pmForm, isDefault: e.target.checked })} />
-              Set as default
-            </label>
-            <button className="btn btn-primary">Add Payment Method</button>
-          </form>
-        )}
-
-        <div className="address-list">
-          {paymentMethods.map((pm) => (
-            <div key={pm.id} className="address-card">
-              <div>
-                <strong>{pm.label}</strong>
-                {pm.isDefault && <span className="default-badge" style={{ marginLeft: 8 }}>Default</span>}
-                <div style={{ fontSize: '0.9rem', color: '#666', marginTop: 4 }}>
-                  {{ CREDIT_CARD: 'Credit Card', DEBIT_CARD: 'Debit Card', E_WALLET: 'E-Wallet' }[pm.type] || pm.type}
-                  {pm.lastFour ? ` ending ${pm.lastFour}` : ''}
+          <div className="address-list">
+            {addresses.map((addr) => (
+              <div key={addr.id} className="address-card">
+                <div>
+                  <strong>{addr.label}</strong> {addr.isDefault && <span className="default-badge">Default</span>}
+                  <div style={{ fontSize: '0.9rem', color: '#666', marginTop: 4 }}>
+                    {addr.street}{addr.unitNumber ? `, ${addr.unitNumber}` : ''}, {addr.city} {addr.postalCode}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-secondary btn-small" onClick={() => startEdit(addr)}>Edit</button>
+                  <button className="btn btn-secondary btn-small" onClick={() => deleteAddress(addr.id)}>Delete</button>
                 </div>
               </div>
-              <button className="btn btn-secondary btn-small" onClick={() => deletePaymentMethod(pm.id)}>Remove</button>
-            </div>
-          ))}
-          {paymentMethods.length === 0 && <div className="empty-state">No payment methods saved.</div>}
+            ))}
+            {addresses.length === 0 && <div className="empty-state">No addresses yet.</div>}
+          </div>
         </div>
-      </div>
+      )}
+
+      {isCustomer && (
+        <div className="checkout-section">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ margin: 0 }}>Payment Methods</h3>
+            <button className="btn btn-outline btn-small" onClick={() => setShowPmForm(!showPmForm)}>
+              {showPmForm ? 'Cancel' : '+ Add'}
+            </button>
+          </div>
+
+          {showPmForm && (
+            <form onSubmit={handlePmSubmit} style={{ marginBottom: 20, padding: 16, background: '#fafafa', borderRadius: 8 }}>
+              <div className="form-group">
+                <label>Label</label>
+                <input placeholder="e.g. Personal Card" value={pmForm.label} onChange={(e) => setPmForm({ ...pmForm, label: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Type</label>
+                <select value={pmForm.type} onChange={(e) => setPmForm({ ...pmForm, type: e.target.value })}>
+                  <option value="CREDIT_CARD">Credit Card</option>
+                  <option value="DEBIT_CARD">Debit Card</option>
+                  <option value="E_WALLET">E-Wallet</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Last 4 digits <span style={{ fontWeight: 400, color: '#aaa' }}>(optional)</span></label>
+                <input
+                  placeholder="e.g. 4242" maxLength={4} value={pmForm.lastFour}
+                  onChange={(e) => setPmForm({ ...pmForm, lastFour: e.target.value })}
+                />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <input type="checkbox" checked={pmForm.isDefault} onChange={(e) => setPmForm({ ...pmForm, isDefault: e.target.checked })} />
+                Set as default
+              </label>
+              <button className="btn btn-primary">Add Payment Method</button>
+            </form>
+          )}
+
+          <div className="address-list">
+            {paymentMethods.map((pm) => (
+              <div key={pm.id} className="address-card">
+                <div>
+                  <strong>{pm.label}</strong>
+                  {pm.isDefault && <span className="default-badge" style={{ marginLeft: 8 }}>Default</span>}
+                  <div style={{ fontSize: '0.9rem', color: '#666', marginTop: 4 }}>
+                    {{ CREDIT_CARD: 'Credit Card', DEBIT_CARD: 'Debit Card', E_WALLET: 'E-Wallet' }[pm.type] || pm.type}
+                    {pm.lastFour ? ` ending ${pm.lastFour}` : ''}
+                  </div>
+                </div>
+                <button className="btn btn-secondary btn-small" onClick={() => deletePaymentMethod(pm.id)}>Remove</button>
+              </div>
+            ))}
+            {paymentMethods.length === 0 && <div className="empty-state">No payment methods saved.</div>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

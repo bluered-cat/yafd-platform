@@ -19,7 +19,7 @@ export default function RestaurantDetailPage() {
           api.get(`/api/restaurants/${id}/menus`),
         ]);
         setRestaurant(restRes.data);
-        setMenus(menusRes.data);
+        setMenus([...menusRes.data].sort((a, b) => a.name.localeCompare(b.name)));
 
         // Fetch items for each menu
         const itemPromises = menusRes.data.map((menu) =>

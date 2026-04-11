@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api';
 
+const STATUS_LABELS = {
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  PREPARING: 'Preparing',
+  OUT_FOR_DELIVERY: 'Out for Delivery',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+  FAILED: 'Failed',
+};
+
 export default function OrderConfirmationPage() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
@@ -36,7 +46,7 @@ export default function OrderConfirmationPage() {
 
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>Status</div>
-          <span className={`order-status ${order.status.toLowerCase()}`}>{order.status}</span>
+          <span className={`order-status ${order.status.toLowerCase()}`}>{STATUS_LABELS[order.status] || order.status}</span>
         </div>
 
         <div style={{ marginBottom: 16 }}>
