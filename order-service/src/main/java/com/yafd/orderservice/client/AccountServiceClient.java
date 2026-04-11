@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
+
 @Component
 @RequiredArgsConstructor
 public class AccountServiceClient {
@@ -32,4 +33,3 @@ public class AccountServiceClient {
         restTemplate.put(url, Map.of("available", available));
     }
 }
-
