@@ -34,6 +34,14 @@ function RiderRoute({ children }) {
   return children;
 }
 
+function CustomerOrStaffRoute({ children }) {
+  const { currentUser, userProfile } = useAuth();
+  if (!currentUser) return <Navigate to="/login" />;
+  if (userProfile && userProfile.role === 'RIDER') return <Navigate to="/rider/orders" />;
+  if (userProfile && userProfile.role !== 'CUSTOMER' && userProfile.role !== 'STAFF') return <Navigate to="/login" />;
+  return children;
+}
+
 function App() {
   return (
     <Router>
@@ -45,8 +53,8 @@ function App() {
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/" element={<RestaurantListPage />} />
-                <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
+                <Route path="/" element={<CustomerOrStaffRoute><RestaurantListPage /></CustomerOrStaffRoute>} />
+                <Route path="/restaurants/:id" element={<CustomerOrStaffRoute><RestaurantDetailPage /></CustomerOrStaffRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
                 <Route path="/orders/:orderId/confirmation" element={<ProtectedRoute><OrderConfirmationPage /></ProtectedRoute>} />

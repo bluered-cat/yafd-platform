@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 
+const STATUS_LABELS = {
+  PENDING: 'Pending',
+  CONFIRMED: 'Confirmed',
+  PREPARING: 'Preparing',
+  OUT_FOR_DELIVERY: 'Out for Delivery',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+  FAILED: 'Failed',
+};
+
 export default function OrderHistoryPage() {
   const { currentUser } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -48,7 +58,7 @@ export default function OrderHistoryPage() {
                     {new Date(order.createdAt).toLocaleString()}
                   </div>
                 </div>
-                <span className={`order-status ${order.status.toLowerCase()}`}>{order.status}</span>
+                <span className={`order-status ${order.status.toLowerCase()}`}>{STATUS_LABELS[order.status] || order.status}</span>
               </div>
               <div style={{ marginBottom: 12 }}>
                 {order.items?.map((item) => (
