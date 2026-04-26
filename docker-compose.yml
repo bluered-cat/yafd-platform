@@ -1,6 +1,8 @@
 version: '3.8'
 
 services:
+
+  # ─── Database ───────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: yafd-postgres
@@ -14,10 +16,111 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U yafd"]
+      test: ["CMD-SHELL", "pg_isready -U yafd -d yafd_accounts"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ─── Backend Services ────────────────────────────────────────────────────────
+  account-service:
+    build: ./account-service
+    container_name: yafd-account-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/yafd_accounts
+      SPRING_DATASOURCE_USERNAME: yafd
+      SPRING_DATASOURCE_PASSWORD: yafd_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  menu-service:
+    build: ./menu-service
+    container_name: yafd-menu-service
+    ports:
+      - "8082:8082"
+    environment:
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-yafd-c0f20}
+      FIREBASE_CREDENTIALS_PATH: /app/firebase-service-account.json
+      JAVA_TOOL_OPTIONS: "-Dio.grpc.netty.shaded.io.netty.handler.ssl.noOpenSsl=true"
+    volumes:
+      - ./menu-service/src/main/resources/firebase-service-account.json:/app/firebase-service-account.json:ro
+
+  order-service:
+    build: ./order-service
+    container_name: yafd-order-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/yafd_orders
+      SPRING_DATASOURCE_USERNAME: yafd
+      SPRING_DATASOURCE_PASSWORD: yafd_password
+      SERVICES_ACCOUNT_URL: http://account-service:8081
+      SERVICES_MENU_URL: http://menu-service:8082
+      SERVICES_VOUCHER_URL: http://voucher-service:8084
+      SERVICES_PAYMENT_URL: http://payment-service:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  voucher-service:
+    build: ./voucher-service
+    container_name: yafd-voucher-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/yafd_vouchers
+      SPRING_DATASOURCE_USERNAME: yafd
+      SPRING_DATASOURCE_PASSWORD: yafd_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-service:
+    build: ./payment-service
+    container_name: yafd-payment-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/yafd_payments
+      SPRING_DATASOURCE_USERNAME: yafd
+      SPRING_DATASOURCE_PASSWORD: yafd_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: yafd-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      ACCOUNT_SERVICE_URL: http://account-service:8081
+      MENU_SERVICE_URL: http://menu-service:8082
+      ORDER_SERVICE_URL: http://order-service:8083
+      VOUCHER_SERVICE_URL: http://voucher-service:8084
+      PAYMENT_SERVICE_URL: http://payment-service:8085
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-yafd-c0f20}
+      FIREBASE_CREDENTIALS_PATH: /app/firebase-service-account.json
+      JAVA_TOOL_OPTIONS: "-Dio.grpc.netty.shaded.io.netty.handler.ssl.noOpenSsl=true"
+    volumes:
+      - ./api-gateway/src/main/resources/firebase-service-account.json:/app/firebase-service-account.json:ro
+    depends_on:
+      - account-service
+      - menu-service
+      - order-service
+      - payment-service
+      - voucher-service
+
+  # ─── Frontend ────────────────────────────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: yafd-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
 
 volumes:
   postgres_data:
