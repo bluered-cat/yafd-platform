@@ -1,0 +1,88 @@
+name: Load Tests
+
+on:
+  workflow_dispatch:          # run manually from GitHub Actions UI only
+  # schedule disabled
+  # schedule:
+  #   - cron: '0 12 * * 1'    # every Monday 12am
+
+jobs:
+  load-test-menu-service:
+    name: Load Test — Menu Service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start services with Docker Compose
+        run: docker compose up -d menu-service
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      - name: Wait for menu-service to be ready
+        run: |
+          echo "Waiting for menu-service..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8082/actuator/health; then
+              echo "menu-service is up"
+              break
+            fi
+            echo "Attempt $i/30 — retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run menu-service load test
+        run: k6 run load-tests/menu-service.js
+        env:
+          MENU_SERVICE_URL: http://localhost:8082
+          RESTAURANT_IDS: "IxvrRDMgFr6JNTqcHnkS,Rl3cRB1Ox2bPn1kbexXk"
+          MENU_IDS: "pQKaoMqkJLjMvKv8kAHd,kYRiv1wNyeFLG1n8DCTe,04AxttjNymeaWJ936Kcm"
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
+
+  load-test-order-service:
+    name: Load Test — Order Service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start services with Docker Compose
+        run: docker compose up -d order-service menu-service
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      - name: Wait for order-service to be ready
+        run: |
+          echo "Waiting for order-service..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8083/actuator/health; then
+              echo "order-service is up"
+              break
+            fi
+            echo "Attempt $i/30 — retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run order-service load test
+        run: k6 run load-tests/order-service.js
+        env:
+          ORDER_SERVICE_URL: http://localhost:8083
+          USER_IDS: "4Eaq5b7GopZg6vl7p0MstWE53b82,0ZYBK2HNDoSZV4EURSLcLbpLMvC2"
+          MENU_ITEM_IDS: "13utNluWbgIHCcPajrav,3l8rVyZDSFW4yXnA9AHM,3vBDLqKMwMDine4eM3s5,66sBNLxoOwZLSvmPjMe0,78P9RAz78fIgop0h8Ily"
+          ADDRESS_IDS: "1,2"
+          PAYMENT_METHOD_IDS: "2,3"
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
