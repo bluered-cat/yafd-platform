@@ -37,20 +37,27 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t $ECR_REGISTRY/yafd/frontend:${{ github.sha }} \
-            -t $ECR_REGISTRY/yafd/frontend:latest \
+            --build-arg REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }} \
+            --build-arg REACT_APP_FIREBASE_API_KEY=${{ secrets.REACT_APP_FIREBASE_API_KEY }} \
+            --build-arg REACT_APP_FIREBASE_AUTH_DOMAIN=${{ secrets.REACT_APP_FIREBASE_AUTH_DOMAIN }} \
+            --build-arg REACT_APP_FIREBASE_PROJECT_ID=${{ secrets.REACT_APP_FIREBASE_PROJECT_ID }} \
+            --build-arg REACT_APP_FIREBASE_STORAGE_BUCKET=${{ secrets.REACT_APP_FIREBASE_STORAGE_BUCKET }} \
+            --build-arg REACT_APP_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }} \
+            --build-arg REACT_APP_FIREBASE_APP_ID=${{ secrets.REACT_APP_FIREBASE_APP_ID }} \
+            -t $ECR_REGISTRY/yafd-frontend:${{ github.sha }} \
+            -t $ECR_REGISTRY/yafd-frontend:latest \
             ./frontend
 
       - name: Push image to ECR
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push $ECR_REGISTRY/yafd/frontend:${{ github.sha }}
-          docker push $ECR_REGISTRY/yafd/frontend:latest
+          docker push $ECR_REGISTRY/yafd-frontend:${{ github.sha }}
+          docker push $ECR_REGISTRY/yafd-frontend:latest
 
       - name: Download task definition
         if: github.ref == 'refs/heads/main'
         run: |
-          aws ecs describe-task-definition --task-definition yafd-frontend \
+          aws ecs describe-task-definition --task-definition yafd-frontend-task \
             --query taskDefinition > task-definition.json
 
       - name: Update task definition with new image
@@ -59,15 +66,15 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: frontend
-          image: ${{ env.ECR_REGISTRY }}/yafd/frontend:${{ github.sha }}
+          container-name: yafd-frontend
+          image: ${{ env.ECR_REGISTRY }}/yafd-frontend:${{ github.sha }}
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: yafd-frontend
+          service: yafd-frontend-task-service-2
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
@@ -94,15 +101,15 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t $ECR_REGISTRY/yafd/account-service:${{ github.sha }} \
-            -t $ECR_REGISTRY/yafd/account-service:latest \
+            -t $ECR_REGISTRY/yafd-account-service:${{ github.sha }} \
+            -t $ECR_REGISTRY/yafd-account-service:latest \
             ./account-service
 
       - name: Push image to ECR
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push $ECR_REGISTRY/yafd/account-service:${{ github.sha }}
-          docker push $ECR_REGISTRY/yafd/account-service:latest
+          docker push $ECR_REGISTRY/yafd-account-service:${{ github.sha }}
+          docker push $ECR_REGISTRY/yafd-account-service:latest
 
       - name: Download task definition
         if: github.ref == 'refs/heads/main'
@@ -117,7 +124,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: account-service
-          image: ${{ env.ECR_REGISTRY }}/yafd/account-service:${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/yafd-account-service:${{ github.sha }}
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
@@ -151,15 +158,15 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t $ECR_REGISTRY/yafd/api-gateway:${{ github.sha }} \
-            -t $ECR_REGISTRY/yafd/api-gateway:latest \
+            -t $ECR_REGISTRY/yafd-api-gateway:${{ github.sha }} \
+            -t $ECR_REGISTRY/yafd-api-gateway:latest \
             ./api-gateway
 
       - name: Push image to ECR
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push $ECR_REGISTRY/yafd/api-gateway:${{ github.sha }}
-          docker push $ECR_REGISTRY/yafd/api-gateway:latest
+          docker push $ECR_REGISTRY/yafd-api-gateway:${{ github.sha }}
+          docker push $ECR_REGISTRY/yafd-api-gateway:latest
 
       - name: Download task definition
         if: github.ref == 'refs/heads/main'
@@ -174,7 +181,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: api-gateway
-          image: ${{ env.ECR_REGISTRY }}/yafd/api-gateway:${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/yafd-api-gateway:${{ github.sha }}
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
@@ -208,15 +215,15 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t $ECR_REGISTRY/yafd/menu-service:${{ github.sha }} \
-            -t $ECR_REGISTRY/yafd/menu-service:latest \
+            -t $ECR_REGISTRY/yafd-menu-service:${{ github.sha }} \
+            -t $ECR_REGISTRY/yafd-menu-service:latest \
             ./menu-service
 
       - name: Push image to ECR
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push $ECR_REGISTRY/yafd/menu-service:${{ github.sha }}
-          docker push $ECR_REGISTRY/yafd/menu-service:latest
+          docker push $ECR_REGISTRY/yafd-menu-service:${{ github.sha }}
+          docker push $ECR_REGISTRY/yafd-menu-service:latest
 
       - name: Download task definition
         if: github.ref == 'refs/heads/main'
@@ -231,7 +238,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: menu-service
-          image: ${{ env.ECR_REGISTRY }}/yafd/menu-service:${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/yafd-menu-service:${{ github.sha }}
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
@@ -265,15 +272,15 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t $ECR_REGISTRY/yafd/order-service:${{ github.sha }} \
-            -t $ECR_REGISTRY/yafd/order-service:latest \
+            -t $ECR_REGISTRY/yafd-order-service:${{ github.sha }} \
+            -t $ECR_REGISTRY/yafd-order-service:latest \
             ./order-service
 
       - name: Push image to ECR
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push $ECR_REGISTRY/yafd/order-service:${{ github.sha }}
-          docker push $ECR_REGISTRY/yafd/order-service:latest
+          docker push $ECR_REGISTRY/yafd-order-service:${{ github.sha }}
+          docker push $ECR_REGISTRY/yafd-order-service:latest
 
       - name: Download task definition
         if: github.ref == 'refs/heads/main'
@@ -288,7 +295,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: order-service
-          image: ${{ env.ECR_REGISTRY }}/yafd/order-service:${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/yafd-order-service:${{ github.sha }}
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
@@ -322,15 +329,15 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t $ECR_REGISTRY/yafd/payment-service:${{ github.sha }} \
-            -t $ECR_REGISTRY/yafd/payment-service:latest \
+            -t $ECR_REGISTRY/yafd-payment-service:${{ github.sha }} \
+            -t $ECR_REGISTRY/yafd-payment-service:latest \
             ./payment-service
 
       - name: Push image to ECR
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push $ECR_REGISTRY/yafd/payment-service:${{ github.sha }}
-          docker push $ECR_REGISTRY/yafd/payment-service:latest
+          docker push $ECR_REGISTRY/yafd-payment-service:${{ github.sha }}
+          docker push $ECR_REGISTRY/yafd-payment-service:latest
 
       - name: Download task definition
         if: github.ref == 'refs/heads/main'
@@ -345,7 +352,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: payment-service
-          image: ${{ env.ECR_REGISTRY }}/yafd/payment-service:${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/yafd-payment-service:${{ github.sha }}
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
@@ -379,15 +386,15 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -t $ECR_REGISTRY/yafd/voucher-service:${{ github.sha }} \
-            -t $ECR_REGISTRY/yafd/voucher-service:latest \
+            -t $ECR_REGISTRY/yafd-voucher-service:${{ github.sha }} \
+            -t $ECR_REGISTRY/yafd-voucher-service:latest \
             ./voucher-service
 
       - name: Push image to ECR
         if: github.ref == 'refs/heads/main'
         run: |
-          docker push $ECR_REGISTRY/yafd/voucher-service:${{ github.sha }}
-          docker push $ECR_REGISTRY/yafd/voucher-service:latest
+          docker push $ECR_REGISTRY/yafd-voucher-service:${{ github.sha }}
+          docker push $ECR_REGISTRY/yafd-voucher-service:latest
 
       - name: Download task definition
         if: github.ref == 'refs/heads/main'
@@ -402,7 +409,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: voucher-service
-          image: ${{ env.ECR_REGISTRY }}/yafd/voucher-service:${{ github.sha }}
+          image: ${{ env.ECR_REGISTRY }}/yafd-voucher-service:${{ github.sha }}
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
