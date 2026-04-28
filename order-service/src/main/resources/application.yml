@@ -5,9 +5,9 @@ spring:
   application:
     name: order-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/yafd_orders
-    username: yafd
-    password: yafd_password
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/yafd_orders}
+    username: ${DB_USERNAME:yafd}
+    password: ${DB_PASSWORD:yafd_password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -19,7 +19,7 @@ spring:
 
 # Service URLs for inter-service communication
 services:
-  account-url: http://localhost:8081
-  menu-url: http://localhost:8082
-  voucher-url: http://localhost:8084
-  payment-url: http://localhost:8085
+  account-url: ${ACCOUNT_SERVICE_URL:http://localhost:8081}
+  menu-url: ${MENU_SERVICE_URL:http://localhost:8082}
+  voucher-url: ${VOUCHER_SERVICE_URL:http://localhost:8084}
+  payment-url: ${PAYMENT_SERVICE_URL:http://localhost:8085}
