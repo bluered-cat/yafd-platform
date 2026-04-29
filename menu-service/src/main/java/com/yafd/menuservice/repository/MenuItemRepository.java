@@ -3,6 +3,8 @@ package com.yafd.menuservice.repository;
 import com.google.cloud.firestore.*;
 import com.yafd.menuservice.model.MenuItem;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -16,6 +18,7 @@ public class MenuItemRepository {
     private final Firestore firestore;
     private static final String COLLECTION = "menu_items";
 
+    @CacheEvict(value = "menuItems", allEntries = true)
     public MenuItem save(MenuItem item) throws ExecutionException, InterruptedException {
         String now = Instant.now().toString();
         Map<String, Object> data = new HashMap<>();
@@ -49,6 +52,7 @@ public class MenuItemRepository {
         return Optional.of(docToMenuItem(doc));
     }
 
+    @Cacheable(value = "menuItems", key = "#menuId")
     public List<MenuItem> findByMenuId(String menuId) throws ExecutionException, InterruptedException {
         List<QueryDocumentSnapshot> docs = firestore.collection(COLLECTION)
                 .whereEqualTo("menuId", menuId).get().get().getDocuments();
@@ -68,6 +72,7 @@ public class MenuItemRepository {
         return results;
     }
 
+    @CacheEvict(value = "menuItems", allEntries = true)
     public void deleteById(String id) throws ExecutionException, InterruptedException {
         firestore.collection(COLLECTION).document(id).delete().get();
     }

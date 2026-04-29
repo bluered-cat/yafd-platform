@@ -10,7 +10,10 @@ const userOrdersDuration         = new Trend('user_orders_duration');
 const errorRate                  = new Rate('error_rate');
 
 // ─── Test Config ──────────────────────────────────────────────────────────────
-const BASE_URL = __ENV.ORDER_SERVICE_URL || 'http://localhost:8083';
+const BASE_URL         = __ENV.ORDER_SERVICE_URL  || 'http://localhost:8083';
+const FIREBASE_API_KEY = __ENV.FIREBASE_API_KEY   || '';
+const TEST_EMAIL       = __ENV.TEST_EMAIL         || '';
+const TEST_PASSWORD    = __ENV.TEST_PASSWORD      || '';
 
 export const options = {
   stages: [
@@ -23,7 +26,9 @@ export const options = {
   thresholds: {
     // Order submission can be slower — DB writes + external calls
     http_req_duration:             ['p(95)<1000'],
-    http_req_failed:               ['rate<0.01'],
+    // Use custom error_rate instead of http_req_failed — the exhausted-voucher
+    // group intentionally returns 400s which would skew http_req_failed
+    error_rate:                    ['rate<0.01'],
     submit_order_duration:         ['p(95)<1000'],
     submit_order_voucher_duration: ['p(95)<1200'],
     get_order_duration:            ['p(95)<500'],
@@ -71,11 +76,11 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function buildOrderPayload(userId, voucherCode) {
+function buildOrderPayload(userId, voucherCode, minQuantity = 1) {
   const itemCount = randomInt(1, 3);
   const items = Array.from({ length: itemCount }, () => ({
     menuItemId: randomItem(MENU_ITEM_IDS),
-    quantity:   randomInt(1, 4),
+    quantity:   randomInt(minQuantity, 4),
   }));
 
   return JSON.stringify({
@@ -93,28 +98,58 @@ function logFailure(groupName, res) {
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
+// ─── Firebase Auth ────────────────────────────────────────────────────────────
+function getFirebaseToken() {
+  if (!FIREBASE_API_KEY || !TEST_EMAIL || !TEST_PASSWORD) {
+    console.log('No Firebase credentials provided — running without auth (local only)');
+    return null;
+  }
+  const res = http.post(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+    JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD, returnSecureToken: true }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+  if (res.status !== 200) {
+    console.error(`Firebase sign-in failed (${res.status}): ${res.body}`);
+    return null;
+  }
+  const token = res.json('idToken');
+  console.log(`Firebase sign-in successful for ${TEST_EMAIL}`);
+  return token;
+}
+
 // ─── Setup ────────────────────────────────────────────────────────────────────
-// Runs once before any VUs start — exhausts the single-use voucher so the
-// rejection test case below is guaranteed to see a fully-used voucher.
+// Runs once before any VUs start — gets a Firebase token, then exhausts the
+// single-use voucher so the rejection test case is guaranteed to see it used.
 export function setup() {
+  const token = getFirebaseToken();
+  const headers = token
+    ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+    : JSON_HEADERS;
+
   const res = http.post(
     `${BASE_URL}/api/orders`,
     buildOrderPayload(USER_IDS[0], EXHAUSTED_VOUCHER),
-    { headers: JSON_HEADERS }
+    { headers }
   );
   console.log(`Setup: redeemed ${EXHAUSTED_VOUCHER} once (status ${res.status}) — voucher is now exhausted`);
+
+  return { token };
 }
 
 // ─── Main Scenario ────────────────────────────────────────────────────────────
 // Simulates a user submitting an order then checking its status
-export default function () {
+export default function (data) {
   const userId = randomItem(USER_IDS);
+  const authHeaders = data && data.token
+    ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.token}` }
+    : JSON_HEADERS;
 
   group('Submit new order', () => {
     const res = http.post(
       `${BASE_URL}/api/orders`,
       buildOrderPayload(userId, null),
-      { headers: JSON_HEADERS }
+      { headers: authHeaders }
     );
     submitOrderDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 201);
@@ -137,8 +172,8 @@ export default function () {
     const voucher = randomItem(VOUCHER_CODES);
     const res = http.post(
       `${BASE_URL}/api/orders`,
-      buildOrderPayload(userId, voucher),
-      { headers: JSON_HEADERS }
+      buildOrderPayload(userId, voucher, 3),  // min qty 3 to clear $5 minimum
+      { headers: authHeaders }
     );
     submitOrderVoucherDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 201);
@@ -164,7 +199,7 @@ export default function () {
     const res = http.post(
       `${BASE_URL}/api/orders`,
       buildOrderPayload(userId, EXHAUSTED_VOUCHER),
-      { headers: JSON_HEADERS }
+      { headers: authHeaders }
     );
     // Rejection is the expected outcome — do not count against errorRate
     const ok = check(res, {
@@ -179,7 +214,7 @@ export default function () {
     // Use a real order ID if available, otherwise skip
     if (createdOrderIds.length === 0) return;
     const orderId = randomItem(createdOrderIds);
-    const res = http.get(`${BASE_URL}/api/orders/${orderId}`);
+    const res = http.get(`${BASE_URL}/api/orders/${orderId}`, { headers: authHeaders });
     getOrderDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 404);
     const ok = check(res, {
@@ -191,7 +226,7 @@ export default function () {
   sleep(1);
 
   group('Get orders for user', () => {
-    const res = http.get(`${BASE_URL}/api/orders/user/${userId}`);
+    const res = http.get(`${BASE_URL}/api/orders/user/${userId}`, { headers: authHeaders });
     userOrdersDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 404);
     const ok = check(res, {
