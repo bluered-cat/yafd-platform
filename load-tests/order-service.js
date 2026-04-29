@@ -21,6 +21,7 @@ export const options = {
     { duration: '20s', target: 0  },  // ramp down
   ],
   thresholds: {
+    // Order submission can be slower — DB writes + external calls
     http_req_duration:             ['p(95)<1000'],
     http_req_failed:               ['rate<0.01'],
     submit_order_duration:         ['p(95)<1000'],
@@ -31,6 +32,8 @@ export const options = {
 };
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
+// These IDs must exist in your DB before running the test
+// Firebase UIDs — replace with real UIDs from your Firebase/DB
 const USER_IDS = __ENV.USER_IDS
   ? __ENV.USER_IDS.split(',')
   : ['4Eaq5b7GopZg6vl7p0MstWE53b82', '0ZYBK2HNDoSZV4EURSLcLbpLMvC2'];
@@ -43,10 +46,12 @@ const ADDRESS_IDS = __ENV.ADDRESS_IDS
   ? __ENV.ADDRESS_IDS.split(',')
   : ['1', '2'];
 
+// IDs from the payment_methods table (PostgreSQL Long) — saved cards per user
 const PAYMENT_METHOD_IDS = __ENV.PAYMENT_METHOD_IDS
   ? __ENV.PAYMENT_METHOD_IDS.split(',')
-  : ['2', '3'];
+  : ['1', '2'];
 
+// Active voucher codes from voucher-service data.sql
 const VOUCHER_CODES = __ENV.VOUCHER_CODES
   ? __ENV.VOUCHER_CODES.split(',')
   : ['FLASH10'];
@@ -82,6 +87,10 @@ function buildOrderPayload(userId, voucherCode) {
   });
 }
 
+function logFailure(groupName, res) {
+  console.error(`[FAIL] ${groupName} — status ${res.status} — ${res.url} — ${res.body}`);
+}
+
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
@@ -97,6 +106,7 @@ export function setup() {
 }
 
 // ─── Main Scenario ────────────────────────────────────────────────────────────
+// Simulates a user submitting an order then checking its status
 export default function () {
   const userId = randomItem(USER_IDS);
 
@@ -108,15 +118,16 @@ export default function () {
     );
     submitOrderDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 201);
-    check(res, {
+    const ok = check(res, {
       'order created (200/201)': (r) => r.status === 200 || r.status === 201,
     });
+    if (!ok) logFailure('Submit new order', res);
 
     if (res.status === 200 || res.status === 201) {
       try {
         const body = res.json();
         if (body && body.id) createdOrderIds.push(String(body.id));
-      } catch (_) {}
+      } catch (_) { /* ignore parse errors */ }
     }
   });
 
@@ -131,18 +142,19 @@ export default function () {
     );
     submitOrderVoucherDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 201);
-    check(res, {
+    const ok = check(res, {
       'voucher order created (200/201)': (r) => r.status === 200 || r.status === 201,
       'discount applied':                (r) => {
         try { return r.json().discountAmount > 0; } catch (_) { return false; }
       },
     });
+    if (!ok) logFailure('Submit order with voucher', res);
 
     if (res.status === 200 || res.status === 201) {
       try {
         const body = res.json();
         if (body && body.id) createdOrderIds.push(String(body.id));
-      } catch (_) {}
+      } catch (_) { /* ignore parse errors */ }
     }
   });
 
@@ -155,22 +167,25 @@ export default function () {
       { headers: JSON_HEADERS }
     );
     // Rejection is the expected outcome — do not count against errorRate
-    check(res, {
+    const ok = check(res, {
       'exhausted voucher is rejected (400)': (r) => r.status === 400,
     });
+    if (!ok) logFailure('Submit order with exhausted voucher', res);
   });
 
   sleep(1);
 
   group('Get order by ID', () => {
+    // Use a real order ID if available, otherwise skip
     if (createdOrderIds.length === 0) return;
     const orderId = randomItem(createdOrderIds);
     const res = http.get(`${BASE_URL}/api/orders/${orderId}`);
     getOrderDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 404);
-    check(res, {
+    const ok = check(res, {
       'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
     });
+    if (!ok) logFailure('Get order by ID', res);
   });
 
   sleep(1);
@@ -179,9 +194,10 @@ export default function () {
     const res = http.get(`${BASE_URL}/api/orders/user/${userId}`);
     userOrdersDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 404);
-    check(res, {
+    const ok = check(res, {
       'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
     });
+    if (!ok) logFailure('Get orders for user', res);
   });
 
   sleep(2);

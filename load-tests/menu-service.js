@@ -21,13 +21,13 @@ export const options = {
   ],
   thresholds: {
     // 95% of all requests must complete under 500ms
-    http_req_duration:       ['p(95)<500'],
+    http_req_duration:          ['p(95)<500'],
     // Less than 1% of requests can fail
-    http_req_failed:         ['rate<0.01'],
+    http_req_failed:            ['rate<0.01'],
     // Per-endpoint thresholds
-    restaurant_list_duration: ['p(95)<400'],
-    search_duration:          ['p(95)<400'],
-    menu_items_duration:      ['p(95)<400'],
+    restaurant_list_duration:   ['p(95)<400'],
+    search_duration:            ['p(95)<400'],
+    menu_items_duration:        ['p(95)<400'],
   },
 };
 
@@ -48,6 +48,10 @@ function randomItem(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function logFailure(groupName, res) {
+  console.error(`[FAIL] ${groupName} — status ${res.status} — ${res.url} — ${res.body}`);
+}
+
 // ─── Main Scenario ────────────────────────────────────────────────────────────
 // Simulates a user browsing the menu: list → search → view restaurant → view items
 export default function () {
@@ -56,10 +60,11 @@ export default function () {
     const res = http.get(`${BASE_URL}/api/restaurants`);
     restaurantListDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200);
-    check(res, {
-      'status is 200':        (r) => r.status === 200,
-      'returns array':        (r) => Array.isArray(r.json()),
+    const ok = check(res, {
+      'status is 200':  (r) => r.status === 200,
+      'returns array':  (r) => Array.isArray(r.json()),
     });
+    if (!ok) logFailure('List all restaurants', res);
   });
 
   sleep(1);
@@ -69,9 +74,10 @@ export default function () {
     const res = http.get(`${BASE_URL}/api/restaurants/search?q=${term}`);
     searchDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200);
-    check(res, {
+    const ok = check(res, {
       'status is 200': (r) => r.status === 200,
     });
+    if (!ok) logFailure('Search restaurants', res);
   });
 
   sleep(1);
@@ -80,9 +86,10 @@ export default function () {
     const id = randomItem(RESTAURANT_IDS);
     const res = http.get(`${BASE_URL}/api/restaurants/${id}`);
     errorRate.add(res.status !== 200 && res.status !== 404);
-    check(res, {
+    const ok = check(res, {
       'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
     });
+    if (!ok) logFailure('Get restaurant by ID', res);
   });
 
   sleep(1);
@@ -91,9 +98,10 @@ export default function () {
     const restaurantId = randomItem(RESTAURANT_IDS);
     const res = http.get(`${BASE_URL}/api/restaurants/${restaurantId}/menus`);
     errorRate.add(res.status !== 200 && res.status !== 404);
-    check(res, {
+    const ok = check(res, {
       'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
     });
+    if (!ok) logFailure('Get menus for restaurant', res);
   });
 
   sleep(1);
@@ -106,9 +114,10 @@ export default function () {
     );
     menuItemsDuration.add(res.timings.duration);
     errorRate.add(res.status !== 200 && res.status !== 404);
-    check(res, {
+    const ok = check(res, {
       'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
     });
+    if (!ok) logFailure('Get menu items', res);
   });
 
   sleep(1);
