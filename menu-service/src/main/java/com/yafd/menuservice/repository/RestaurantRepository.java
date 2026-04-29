@@ -4,6 +4,8 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.yafd.menuservice.model.Restaurant;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -17,6 +19,7 @@ public class RestaurantRepository {
     private final Firestore firestore;
     private static final String COLLECTION = "restaurants";
 
+    @CacheEvict(value = "restaurants", allEntries = true)
     public Restaurant save(Restaurant restaurant) throws ExecutionException, InterruptedException {
         String now = Instant.now().toString();
         Map<String, Object> data = new HashMap<>();
@@ -47,17 +50,20 @@ public class RestaurantRepository {
         return Optional.of(docToRestaurant(doc));
     }
 
+    @Cacheable("restaurants")
     public List<Restaurant> findAll() throws ExecutionException, InterruptedException {
         List<QueryDocumentSnapshot> docs = firestore.collection(COLLECTION).get().get().getDocuments();
         return docs.stream().map(this::docToRestaurant).toList();
     }
 
+    @Cacheable(value = "restaurants", key = "'cuisine:' + #cuisine")
     public List<Restaurant> findByCuisine(String cuisine) throws ExecutionException, InterruptedException {
         List<QueryDocumentSnapshot> docs = firestore.collection(COLLECTION)
                 .whereEqualTo("cuisine", cuisine).get().get().getDocuments();
         return docs.stream().map(this::docToRestaurant).toList();
     }
 
+    @Cacheable(value = "restaurants", key = "'search:' + #query")
     public List<Restaurant> search(String query) throws ExecutionException, InterruptedException {
         // Firestore doesn't support full-text search natively, so we do client-side filtering
         List<Restaurant> all = findAll();
@@ -68,6 +74,7 @@ public class RestaurantRepository {
                 .toList();
     }
 
+    @CacheEvict(value = "restaurants", allEntries = true)
     public void deleteById(String id) throws ExecutionException, InterruptedException {
         firestore.collection(COLLECTION).document(id).delete().get();
     }
