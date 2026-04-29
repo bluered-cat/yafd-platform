@@ -12,8 +12,11 @@ RUN mvn package -DskipTests -B
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+# Install CA certificates so Firebase SSL verification works
+RUN apk add --no-cache ca-certificates && update-ca-certificates
+
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djavax.net.ssl.trustStore=/opt/java/openjdk/lib/security/cacerts", "-Djavax.net.ssl.trustStorePassword=changeit", "-jar", "app.jar"]
