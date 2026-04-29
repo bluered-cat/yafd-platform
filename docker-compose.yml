@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: yafd_password
       POSTGRES_DB: yafd_accounts
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
@@ -106,6 +106,9 @@ services:
       JAVA_TOOL_OPTIONS: "-Dio.grpc.netty.shaded.io.netty.handler.ssl.noOpenSsl=true"
     volumes:
       - ./api-gateway/src/main/resources/firebase-service-account.json:/app/firebase-service-account.json:ro
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - account-service
       - menu-service
