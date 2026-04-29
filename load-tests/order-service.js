@@ -3,10 +3,11 @@ import { check, group, sleep } from 'k6';
 import { Trend, Rate } from 'k6/metrics';
 
 // ─── Custom Metrics ───────────────────────────────────────────────────────────
-const submitOrderDuration  = new Trend('submit_order_duration');
-const getOrderDuration     = new Trend('get_order_duration');
-const userOrdersDuration   = new Trend('user_orders_duration');
-const errorRate            = new Rate('error_rate');
+const submitOrderDuration        = new Trend('submit_order_duration');
+const submitOrderVoucherDuration = new Trend('submit_order_voucher_duration');
+const getOrderDuration           = new Trend('get_order_duration');
+const userOrdersDuration         = new Trend('user_orders_duration');
+const errorRate                  = new Rate('error_rate');
 
 // ─── Test Config ──────────────────────────────────────────────────────────────
 const BASE_URL = __ENV.ORDER_SERVICE_URL || 'http://localhost:8083';
@@ -20,34 +21,38 @@ export const options = {
     { duration: '20s', target: 0  },  // ramp down
   ],
   thresholds: {
-    // Order submission can be slower — DB writes + external calls
-    http_req_duration:    ['p(95)<1000'],
-    http_req_failed:      ['rate<0.01'],
-    submit_order_duration: ['p(95)<1000'],
-    get_order_duration:    ['p(95)<500'],
-    user_orders_duration:  ['p(95)<500'],
+    http_req_duration:             ['p(95)<1000'],
+    http_req_failed:               ['rate<0.01'],
+    submit_order_duration:         ['p(95)<1000'],
+    submit_order_voucher_duration: ['p(95)<1200'],
+    get_order_duration:            ['p(95)<500'],
+    user_orders_duration:          ['p(95)<500'],
   },
 };
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
-// These IDs must exist in your DB before running the test
-// Firebase UIDs — replace with real UIDs from your Firebase/DB
-const USER_IDS        = __ENV.USER_IDS
+const USER_IDS = __ENV.USER_IDS
   ? __ENV.USER_IDS.split(',')
   : ['4Eaq5b7GopZg6vl7p0MstWE53b82', '0ZYBK2HNDoSZV4EURSLcLbpLMvC2'];
 
-const MENU_ITEM_IDS   = __ENV.MENU_ITEM_IDS
+const MENU_ITEM_IDS = __ENV.MENU_ITEM_IDS
   ? __ENV.MENU_ITEM_IDS.split(',')
   : ['13utNluWbgIHCcPajrav', '3l8rVyZDSFW4yXnA9AHM', '3vBDLqKMwMDine4eM3s5', '66sBNLxoOwZLSvmPjMe0', '78P9RAz78fIgop0h8Ily'];
 
-const ADDRESS_IDS     = __ENV.ADDRESS_IDS
+const ADDRESS_IDS = __ENV.ADDRESS_IDS
   ? __ENV.ADDRESS_IDS.split(',')
   : ['1', '2'];
 
-// IDs from the payment_methods table (PostgreSQL Long) — saved cards/wallets per user
 const PAYMENT_METHOD_IDS = __ENV.PAYMENT_METHOD_IDS
   ? __ENV.PAYMENT_METHOD_IDS.split(',')
   : ['2', '3'];
+
+const VOUCHER_CODES = __ENV.VOUCHER_CODES
+  ? __ENV.VOUCHER_CODES.split(',')
+  : ['FLASH10'];
+
+// Single-use voucher — exhausted in setup() to verify rejection under load
+const EXHAUSTED_VOUCHER = __ENV.EXHAUSTED_VOUCHER || 'LIMITONE';
 
 // Tracks order IDs created during this run so GET requests use real IDs
 const createdOrderIds = [];
@@ -61,7 +66,7 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function buildOrderPayload(userId) {
+function buildOrderPayload(userId, voucherCode) {
   const itemCount = randomInt(1, 3);
   const items = Array.from({ length: itemCount }, () => ({
     menuItemId: randomItem(MENU_ITEM_IDS),
@@ -73,21 +78,32 @@ function buildOrderPayload(userId) {
     items:           items,
     addressId:       parseInt(randomItem(ADDRESS_IDS)),
     paymentMethodId: parseInt(randomItem(PAYMENT_METHOD_IDS)),
-    voucherCode:     null,
+    voucherCode:     voucherCode || null,
   });
 }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
+// ─── Setup ────────────────────────────────────────────────────────────────────
+// Runs once before any VUs start — exhausts the single-use voucher so the
+// rejection test case below is guaranteed to see a fully-used voucher.
+export function setup() {
+  const res = http.post(
+    `${BASE_URL}/api/orders`,
+    buildOrderPayload(USER_IDS[0], EXHAUSTED_VOUCHER),
+    { headers: JSON_HEADERS }
+  );
+  console.log(`Setup: redeemed ${EXHAUSTED_VOUCHER} once (status ${res.status}) — voucher is now exhausted`);
+}
+
 // ─── Main Scenario ────────────────────────────────────────────────────────────
-// Simulates a user submitting an order then checking its status
 export default function () {
   const userId = randomItem(USER_IDS);
 
   group('Submit new order', () => {
     const res = http.post(
       `${BASE_URL}/api/orders`,
-      buildOrderPayload(userId),
+      buildOrderPayload(userId, null),
       { headers: JSON_HEADERS }
     );
     submitOrderDuration.add(res.timings.duration);
@@ -96,19 +112,57 @@ export default function () {
       'order created (200/201)': (r) => r.status === 200 || r.status === 201,
     });
 
-    // Store created order ID for use in GET requests below
     if (res.status === 200 || res.status === 201) {
       try {
         const body = res.json();
         if (body && body.id) createdOrderIds.push(String(body.id));
-      } catch (_) { /* ignore parse errors */ }
+      } catch (_) {}
     }
   });
 
   sleep(1);
 
+  group('Submit order with voucher', () => {
+    const voucher = randomItem(VOUCHER_CODES);
+    const res = http.post(
+      `${BASE_URL}/api/orders`,
+      buildOrderPayload(userId, voucher),
+      { headers: JSON_HEADERS }
+    );
+    submitOrderVoucherDuration.add(res.timings.duration);
+    errorRate.add(res.status !== 200 && res.status !== 201);
+    check(res, {
+      'voucher order created (200/201)': (r) => r.status === 200 || r.status === 201,
+      'discount applied':                (r) => {
+        try { return r.json().discountAmount > 0; } catch (_) { return false; }
+      },
+    });
+
+    if (res.status === 200 || res.status === 201) {
+      try {
+        const body = res.json();
+        if (body && body.id) createdOrderIds.push(String(body.id));
+      } catch (_) {}
+    }
+  });
+
+  sleep(1);
+
+  group('Submit order with exhausted voucher', () => {
+    const res = http.post(
+      `${BASE_URL}/api/orders`,
+      buildOrderPayload(userId, EXHAUSTED_VOUCHER),
+      { headers: JSON_HEADERS }
+    );
+    // Rejection is the expected outcome — do not count against errorRate
+    check(res, {
+      'exhausted voucher is rejected (400)': (r) => r.status === 400,
+    });
+  });
+
+  sleep(1);
+
   group('Get order by ID', () => {
-    // Use a real order ID if available, otherwise skip
     if (createdOrderIds.length === 0) return;
     const orderId = randomItem(createdOrderIds);
     const res = http.get(`${BASE_URL}/api/orders/${orderId}`);

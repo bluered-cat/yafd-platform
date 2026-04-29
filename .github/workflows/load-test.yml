@@ -55,9 +55,57 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Start services with Docker Compose
-        run: docker compose up -d order-service menu-service
+        run: docker compose up -d postgres account-service payment-service voucher-service menu-service order-service
         env:
           SPRING_PROFILES_ACTIVE: test
+
+      - name: Wait for account-service to be ready
+        run: |
+          echo "Waiting for account-service..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8081/actuator/health; then
+              echo "account-service is up"
+              break
+            fi
+            echo "Attempt $i/30 — retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Wait for voucher-service to be ready
+        run: |
+          echo "Waiting for voucher-service..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8084/actuator/health; then
+              echo "voucher-service is up"
+              break
+            fi
+            echo "Attempt $i/30 — retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Wait for payment-service to be ready
+        run: |
+          echo "Waiting for payment-service..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8085/actuator/health; then
+              echo "payment-service is up"
+              break
+            fi
+            echo "Attempt $i/30 — retrying in 5s..."
+            sleep 5
+          done
+
+      - name: Wait for menu-service to be ready
+        run: |
+          echo "Waiting for menu-service..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8082/actuator/health; then
+              echo "menu-service is up"
+              break
+            fi
+            echo "Attempt $i/30 — retrying in 5s..."
+            sleep 5
+          done
 
       - name: Wait for order-service to be ready
         run: |
@@ -81,7 +129,9 @@ jobs:
           USER_IDS: "4Eaq5b7GopZg6vl7p0MstWE53b82,0ZYBK2HNDoSZV4EURSLcLbpLMvC2"
           MENU_ITEM_IDS: "13utNluWbgIHCcPajrav,3l8rVyZDSFW4yXnA9AHM,3vBDLqKMwMDine4eM3s5,66sBNLxoOwZLSvmPjMe0,78P9RAz78fIgop0h8Ily"
           ADDRESS_IDS: "1,2"
-          PAYMENT_METHOD_IDS: "2,3"
+          PAYMENT_METHOD_IDS: "1,2"
+          VOUCHER_CODES: "FLASH10"
+          EXHAUSTED_VOUCHER: "LIMITONE"
 
       - name: Stop services
         if: always()
