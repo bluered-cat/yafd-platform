@@ -131,7 +131,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: yafd-account-service
+          service: yafd-account-service-service-n2zu2ke0
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
@@ -188,7 +188,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: yafd-api-gateway
+          service: yafd-api-gateway-service-lzr5a9rx
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
@@ -245,7 +245,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: yafd-menu-service
+          service: yafd-menu-service-service-edb5bkb2
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
@@ -302,7 +302,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: yafd-order-service
+          service: yafd-order-service-service-e4p6bk0c
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
@@ -359,7 +359,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: yafd-payment-service
+          service: yafd-payment-service-service-bjv89kpc
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
@@ -416,6 +416,6 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: yafd-voucher-service
+          service: yafd-voucher-service-service-u57lj0mx
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
