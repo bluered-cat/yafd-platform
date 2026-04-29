@@ -5,9 +5,9 @@ spring:
   application:
     name: voucher-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/yafd_vouchers
-    username: yafd
-    password: yafd_password
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/yafd_vouchers}
+    username: ${DB_USERNAME:yafd}
+    password: ${DB_PASSWORD:yafd_password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
