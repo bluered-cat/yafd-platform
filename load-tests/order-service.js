@@ -235,5 +235,21 @@ export default function (data) {
     if (!ok) logFailure('Get orders for user', res);
   });
 
-  sleep(2);
+  sleep(1);
+
+  // Mark a random past order as DELIVERED to release its rider back into the pool.
+  // Without this, all riders get exhausted after the first few iterations and
+  // no subsequent orders can be assigned a rider.
+  group('Complete order (release rider)', () => {
+    if (createdOrderIds.length === 0) return;
+    const orderId = randomItem(createdOrderIds);
+    http.patch(
+      `${BASE_URL}/api/orders/${orderId}/status`,
+      JSON.stringify({ status: 'DELIVERED' }),
+      { headers: authHeaders }
+    );
+    // Don't assert — order may already be DELIVERED or not exist; we just want rider released
+  });
+
+  sleep(1);
 }
