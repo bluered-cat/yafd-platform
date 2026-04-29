@@ -59,11 +59,12 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition yafd-frontend-task \
             --query taskDefinition > task-definition.json
+          jq 'del(.enableFaultInjection)' task-definition.json > clean.json && mv clean.json task-definition.json
 
       - name: Update task definition with new image
         if: github.ref == 'refs/heads/main'
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: yafd-frontend
@@ -71,7 +72,7 @@ jobs:
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: yafd-frontend-task-service-2
@@ -116,11 +117,12 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition yafd-account-service \
             --query taskDefinition > task-definition.json
+          jq 'del(.enableFaultInjection)' task-definition.json > clean.json && mv clean.json task-definition.json
 
       - name: Update task definition with new image
         if: github.ref == 'refs/heads/main'
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: account-service
@@ -128,7 +130,7 @@ jobs:
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: yafd-account-service-service-n2zu2ke0
@@ -173,11 +175,12 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition yafd-api-gateway \
             --query taskDefinition > task-definition.json
+          jq 'del(.enableFaultInjection)' task-definition.json > clean.json && mv clean.json task-definition.json
 
       - name: Update task definition with new image
         if: github.ref == 'refs/heads/main'
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: api-gateway
@@ -185,7 +188,7 @@ jobs:
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: yafd-api-gateway-service-lzr5a9rx
@@ -230,11 +233,12 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition yafd-menu-service \
             --query taskDefinition > task-definition.json
+          jq 'del(.enableFaultInjection)' task-definition.json > clean.json && mv clean.json task-definition.json
 
       - name: Update task definition with new image
         if: github.ref == 'refs/heads/main'
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: menu-service
@@ -242,7 +246,7 @@ jobs:
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: yafd-menu-service-service-edb5bkb2
@@ -287,11 +291,12 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition yafd-order-service \
             --query taskDefinition > task-definition.json
+          jq 'del(.enableFaultInjection)' task-definition.json > clean.json && mv clean.json task-definition.json
 
       - name: Update task definition with new image
         if: github.ref == 'refs/heads/main'
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: order-service
@@ -299,7 +304,7 @@ jobs:
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: yafd-order-service-service-e4p6bk0c
@@ -344,11 +349,12 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition yafd-payment-service \
             --query taskDefinition > task-definition.json
+          jq 'del(.enableFaultInjection)' task-definition.json > clean.json && mv clean.json task-definition.json
 
       - name: Update task definition with new image
         if: github.ref == 'refs/heads/main'
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: payment-service
@@ -356,7 +362,7 @@ jobs:
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: yafd-payment-service-service-bjv89kpc
@@ -401,11 +407,12 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition yafd-voucher-service \
             --query taskDefinition > task-definition.json
+          jq 'del(.enableFaultInjection)' task-definition.json > clean.json && mv clean.json task-definition.json
 
       - name: Update task definition with new image
         if: github.ref == 'refs/heads/main'
         id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: voucher-service
@@ -413,7 +420,7 @@ jobs:
 
       - name: Deploy to ECS
         if: github.ref == 'refs/heads/main'
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: yafd-voucher-service-service-u57lj0mx
