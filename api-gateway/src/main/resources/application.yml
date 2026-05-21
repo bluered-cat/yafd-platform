@@ -72,3 +72,6 @@ firebase:
 gateway:
   auth:
     public-paths: /api/restaurants/**,/api/restaurants/search,/api/menu-items/**
+  rate-limit:
+    browsing-rate: 50
+    order-rate: 20
