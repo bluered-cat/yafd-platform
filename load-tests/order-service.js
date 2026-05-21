@@ -19,8 +19,8 @@ export const options = {
   stages: [
     { duration: '30s', target: 5  },  // ramp up gently (orders are heavy)
     { duration: '1m',  target: 5  },  // hold — steady load
-    { duration: '20s', target: 15 },  // spike
-    { duration: '30s', target: 15 },  // hold spike
+    { duration: '20s', target: 10 },  // spike — 2× normal (single-instance limit)
+    { duration: '30s', target: 10 },  // hold spike
     { duration: '20s', target: 0  },  // ramp down
   ],
   thresholds: {
@@ -119,14 +119,38 @@ function getFirebaseToken() {
 }
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
-// Runs once before any VUs start — gets a Firebase token, then exhausts the
-// single-use voucher so the rejection test case is guaranteed to see it used.
+// Runs once before any VUs start — resets FLASH10's usage limit so it never
+// exhausts mid-test, gets a Firebase token, then exhausts the single-use
+// voucher so the rejection test case is guaranteed to see it used.
 export function setup() {
   const token = getFirebaseToken();
   const headers = token
     ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     : JSON_HEADERS;
 
+  // Bump FLASH10 max usage to a ceiling that no test run can reach.
+  // The DB's current_usage accumulates across runs (data.sql uses WHERE NOT EXISTS
+  // so it never resets); without this the voucher stays exhausted after the first run.
+  const vouchersRes = http.get(`${BASE_URL}/api/vouchers`, { headers });
+  if (vouchersRes.status === 200) {
+    const vouchers = vouchersRes.json();
+    for (const v of vouchers) {
+      if (v.code === 'FLASH10') {
+        const resetRes = http.put(
+          `${BASE_URL}/api/vouchers/${v.id}`,
+          JSON.stringify({ maxUsage: 999999 }),
+          { headers }
+        );
+        console.log(`Setup: FLASH10 maxUsage → 999999 (was ${v.maxUsage}, currentUsage ${v.currentUsage}), status ${resetRes.status}`);
+      }
+    }
+  } else {
+    console.warn(`Setup: could not fetch vouchers (${vouchersRes.status}) — FLASH10 may be exhausted`);
+  }
+
+  // Exhaust LIMITONE so the rejection test case always sees a 400.
+  // If it is already exhausted from a prior run the order returns 400 — that is fine,
+  // the VU check just needs the voucher to be unusable before VUs start.
   const res = http.post(
     `${BASE_URL}/api/orders`,
     buildOrderPayload(USER_IDS[0], EXHAUSTED_VOUCHER),
@@ -258,10 +282,11 @@ export default function (data) {
   // Mark a random past order as DELIVERED to release its rider back into the pool.
   // Without this, all riders get exhausted after the first few iterations and
   // no subsequent orders can be assigned a rider.
+  // NOTE: controller uses @PutMapping — must be PUT, not PATCH.
   group('Complete order (release rider)', () => {
     if (createdOrderIds.length === 0) return;
     const orderId = randomItem(createdOrderIds);
-    http.patch(
+    http.put(
       `${BASE_URL}/api/orders/${orderId}/status`,
       JSON.stringify({ status: 'DELIVERED' }),
       { headers: authHeaders }
