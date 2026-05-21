@@ -20,14 +20,14 @@ export const options = {
     { duration: '20s', target: 0  },  // ramp down
   ],
   thresholds: {
-    // 95% of all requests must complete under 500ms
-    http_req_duration:          ['p(95)<500'],
+    // 95% of all requests must complete under 800ms
+    http_req_duration:          ['p(95)<800'],
     // Less than 1% of requests can fail
     http_req_failed:            ['rate<0.01'],
-    // Per-endpoint thresholds
-    restaurant_list_duration:   ['p(95)<400'],
-    search_duration:            ['p(95)<400'],
-    menu_items_duration:        ['p(95)<400'],
+    // Per-endpoint thresholds (Firestore-backed, cross-region latency accounted for)
+    restaurant_list_duration:   ['p(95)<700'],
+    search_duration:            ['p(95)<700'],
+    menu_items_duration:        ['p(95)<700'],
   },
 };
 

@@ -50,4 +50,12 @@ public class OrderController {
             @RequestParam String userId) {
         return ResponseEntity.ok(orderService.cancelOrder(orderId, userId));
     }
+
+    // Test-only cleanup endpoint — deletes all orders for a given user.
+    // Used by the k6 teardown to wipe load-test data after each run.
+    @DeleteMapping("/user/{userId}")
+    public ResponseEntity<Void> deleteByUserId(@PathVariable String userId) {
+        orderService.deleteByUserId(userId);
+        return ResponseEntity.noContent().build();
+    }
 }
