@@ -200,6 +200,14 @@ public class OrderService {
     }
 
     @Transactional
+    public void deleteByUserId(String userId) {
+        log.info("Deleting all orders for user: {}", userId);
+        List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        orderRepository.deleteAll(orders);
+        log.info("Deleted {} orders for user: {}", orders.size(), userId);
+    }
+
+    @Transactional
     public OrderResponse cancelOrder(Long orderId, String userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found: " + orderId));

@@ -3,17 +3,33 @@ package com.yafd.menuservice.service;
 import com.yafd.menuservice.dto.RestaurantRequest;
 import com.yafd.menuservice.model.Restaurant;
 import com.yafd.menuservice.repository.RestaurantRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RestaurantService {
 
     private final RestaurantRepository repository;
+
+    // Pre-warm the cache on startup so the first wave of requests is served
+    // from memory rather than hitting Firestore cold
+    @PostConstruct
+    public void warmCache() {
+        try {
+            log.info("Pre-warming restaurant cache...");
+            repository.findAll();
+            log.info("Restaurant cache warmed successfully");
+        } catch (Exception e) {
+            log.warn("Cache warm-up failed (non-fatal): {}", e.getMessage());
+        }
+    }
 
     public Restaurant create(RestaurantRequest request) throws ExecutionException, InterruptedException {
         Restaurant restaurant = Restaurant.builder()

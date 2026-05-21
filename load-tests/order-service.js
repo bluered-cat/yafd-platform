@@ -137,6 +137,24 @@ export function setup() {
   return { token };
 }
 
+// ─── Teardown ─────────────────────────────────────────────────────────────────
+// Runs once after all VUs finish — deletes all orders created for test users
+// so the DB is clean for the next run.
+export function teardown(data) {
+  const headers = data && data.token
+    ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.token}` }
+    : JSON_HEADERS;
+
+  for (const userId of USER_IDS) {
+    const res = http.del(`${BASE_URL}/api/orders/user/${userId}`, null, { headers });
+    if (res.status === 204) {
+      console.log(`Teardown: deleted all orders for user ${userId}`);
+    } else {
+      console.error(`Teardown: failed to delete orders for user ${userId} (status ${res.status})`);
+    }
+  }
+}
+
 // ─── Main Scenario ────────────────────────────────────────────────────────────
 // Simulates a user submitting an order then checking its status
 export default function (data) {
