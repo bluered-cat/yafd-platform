@@ -40,7 +40,7 @@ public class RestTemplateConfig {
 
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(Timeout.ofSeconds(3))
-                .setResponseTimeout(Timeout.ofSeconds(8))
+                .setResponseTimeout(Timeout.ofSeconds(15))
                 .setConnectionRequestTimeout(Timeout.ofSeconds(3))
                 .build();
 
