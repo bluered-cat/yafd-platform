@@ -56,10 +56,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/yafd_orders
       SPRING_DATASOURCE_USERNAME: yafd
       SPRING_DATASOURCE_PASSWORD: yafd_password
-      SERVICES_ACCOUNT_URL: http://account-service:8081
-      SERVICES_MENU_URL: http://menu-service:8082
-      SERVICES_VOUCHER_URL: http://voucher-service:8084
-      SERVICES_PAYMENT_URL: http://payment-service:8085
+      ACCOUNT_SERVICE_URL: http://account-service:8081
+      MENU_SERVICE_URL: http://menu-service:8082
+      VOUCHER_SERVICE_URL: http://voucher-service:8084
+      PAYMENT_SERVICE_URL: http://payment-service:8085
     depends_on:
       postgres:
         condition: service_healthy
