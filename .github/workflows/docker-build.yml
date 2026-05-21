@@ -160,6 +160,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Write Firebase credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > api-gateway/src/main/resources/firebase-service-account.json
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -218,6 +221,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Write Firebase credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > menu-service/src/main/resources/firebase-service-account.json
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
